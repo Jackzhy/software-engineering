@@ -1,0 +1,16 @@
+Normal flow: The user will select the truck off the map and be shown a pop-up 
+
+interface giving information about that truck, its current location, and its future 
+
+locations.
+
+Alternate flow: The user will select the truck off a sortable list off the map. The 
+
+same information about location will be available without using the map view.
+
+Exceptions: The database fails to return information that we want to display, such as 
+
+current position. 
+
+Include: 
+
