@@ -1,0 +1,10 @@
+Priority: In all likelihood, use-case A will be the first most important to fulfill functionality for, given its high 
+predicted-frequency-of-use coupled with its functionality being shared by other use-cases as well.
+
+Frequency of Use: It's likely that use-case A will likely average somewhere around once per instance of accessing the application. 
+1/access is also the frequency of use for an ideal scenario, i.e. the user opens the app, looks up a specific food truck, determines that it
+is within an acceptable distance and proceeds to the listed location. Given that no relevant information is available, it's impossible to
+predict the upper-limit of accesses since a user could theoretically exhaustively search through every food truck available, becoming
+dissatisfied with the distances each time (though that's pretty unlikely). 
+
+Business Rules: N/A
