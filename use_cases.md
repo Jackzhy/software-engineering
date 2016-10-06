@@ -1,3 +1,5 @@
+# Assignment 2 Use Cases Paragraph
+
 Use Case A: Search for the Route of a Specific Food Truck
   Users search for a specific food truck within a given radius and are presented with a mapping of all food trucks of the listed type, their predicted route, and a sorted list of their distances relative to the user
 
