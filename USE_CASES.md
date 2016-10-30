@@ -21,12 +21,12 @@ Use Case E: Search for the Menu of a Specific Food Truck
 __________
 
 
-use case 1: a user wants to search a food truck by name through a search bar
+use case 1: a user wants to search a food truck by name through a search bar (MATT)
 
-use case 2: a user wants to make an profile
+use case 2: a user wants to make an profile (HONGYU)
 
-use case 3: a user wants to select a truck off the map
+use case 3: a user wants to select a truck off the map (ALEX)
 
-use case 4: a user wants to see what trucks are nearby
+use case 4: a user wants to see what trucks are nearby (GIULIANO)
 
 use case 5: 
