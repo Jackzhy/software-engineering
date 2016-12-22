@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <link href='https://fonts.googleapis.com/css?family=Roboto:400,700' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.3/css/font-awesome.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+        <script>
+            var map;
+            var startDisplay = true;
+            var userPosition;
+            var googleapiString;
+            var yelpapiString;
+            var truckIcon = 'http://i.imgur.com/IUFh2mB.png';
+            var trucks = [];
+			var currentTruck;
+
+            function initTrucks() {
+      <% for(var i=0; i<tdata.length; i++) {%>
+        trucks.push(createTruck("<%= tdata[i].name %>", "<%= tdata[i].day %>", "<%= tdata[i].time %>", {lat: <%= tdata[i].latitude %>, lng: <%= tdata[i].longitude %>}));
+        <% } %>
+		}
+
+			var app = angular.module( "myApp", ['ngResource','mongolabResource'] );
+
+			  app.constant('API_KEY','50e50ee0e4b09dd235703c6b');
+				app.constant('DB_NAME','polylog');
+
+				app.factory('Contact',function($mongolabResource){
+					return $mongolabResource('contacts');
+				});
+
+			app.config( function ( $routeProvider ) {
+			  $routeProvider
+				.when( '/this', { templateUrl: 'this.html' } )
+				.otherwise( { redirectTo: '/this' } );
+			});
+
+			app.controller( 'MainCtrl', function ( $scope,Contact ) {
+
+			  $scope.updateContacts = function () {
+				Contact.query( function( data ) {
+				  $scope.contacts = data;
+				});
+			  };
+
+			  $scope.save = function(newContact) {
+
+				Contact.save(newContact,function(){
+						$scope.updateContacts();
+					});
+			  };
+
+			  // The initial data load
+			  $scope.updateContacts();
+			});
+
+            function updateTrucks() {
+                for (var i = 0; i < trucks.length; i++) {
+                    if (trucks[i].isVisible) {
+                        trucks[i].marker.setMap(map);
+                    } else {
+                        trucks[i].marker.setMap(null);
+                    }
+                }
+            }
+
+            function testingArray() {
+                trucks.push(createTruck('Houston Truck', "Monday", "lunch", {
+                    lat: 29.725931,
+                    lng: -95.312063
+                }));
+                trucks.push(createTruck('New York Truck', 'tuesday', 'dinner', {
+                    lat: 42.807419,
+                    lng: -75.095306
+                }));
+                trucks.push(createTruck('csLab Truck', 'Wednesday', 'lunch', {
+                    lat: 42.349951,
+                    lng: -71.106968
+                }));
+                trucks.push(createTruck('Science Building', "friday", "breakfast", {
+                    lat: 42.348688,
+                    lng: -71.100111
+                }));
+                trucks.push(createTruck('Baja Taco Truck', 'thursday', 'breakfast', {
+                    lat: 42.350716,
+                    lng: -71.108427
+                }));
+                trucks.push(createTruck('chicken & rice guYs', 'thursday', 'breakfast', {
+                    lat: 42.350716,
+                    lng: -71.108427
+                }));
+            }
+
+            var id_iterator = 0;
+
+            function createTruck(name, day, time, position) {
+                var id = id_iterator;
+                id_iterator++;
+                var truck = {
+                    id: id,
+                    marker: null,
+                    name: name,
+                    day: day,
+                    time: time,
+                    position: position,
+                    isVisible: true
+                };
+                return truck;
+            }
+
+            function createMarker(truck) {
+                var marker = new google.maps.Marker({
+                    position: truck.position,
+                    icon: truckIcon,
+                    title: truck.name
+                });
+                marker.addListener('click', function() {
+                    var infowindow = createInfoWindow(truck);
+                    infowindow.open(map, truck.marker);
+                });
+                return marker;
+            }
+
+            function createInfo(truck) {
+                var info = '<div id="content">' + '<div id="siteNotice">' + '</div>' + '<h1 id="firstHeading" class="firstHeading">' + truck.name + '</h1>' + '<div id="bodyContent">' + '<h3>Serving ' + truck.time.toLowerCase() + '</h3></div>';
+                return info;
+            }
+
+            function createInfoWindow(truck) {
+                var infowindow = new google.maps.InfoWindow({
+                    content: createInfo(truck)
+                });
+                return infowindow;
+            }
+
+            function getUserPosition() {
+                var pos;
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        pos = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        map.setCenter(pos);
+                    }, function() {
+                        handleLocationError(true, infoWindow, map.getCenter());
+                    });
+                } else { // Browser doesn't support Geolocation
+                    pos = map.getCenter();
+                    handleLocationError(false, infoWindow, pos);
+                }
+                return pos;
+            }
+
+            function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+                infoWindow.setPosition(pos);
+                infoWindow.setContent(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
+            }
+
+            // API, BELOW FUNCTIONS ARE FOR USE IN HTML
+
+            function initMap() {
+                trucks = [];
+                map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 12,
+                    center: {
+                        lat: 42.349951,
+                        lng: -71.106968
+                    },
+					styles: [
+            {elementType: 'geometry', stylers: [{color: '#242f3e'}]},
+            {elementType: 'labels.text.stroke', stylers: [{color: '#242f3e'}]},
+            {elementType: 'labels.text.fill', stylers: [{color: '#746855'}]},
+            {
+              featureType: 'administrative.locality',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#d59563'}]
+            },
+            {
+              featureType: 'poi',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#d59563'}]
+            },
+            {
+              featureType: 'poi.park',
+              elementType: 'geometry',
+              stylers: [{color: '#263c3f'}]
+            },
+            {
+              featureType: 'poi.park',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#6b9a76'}]
+            },
+            {
+              featureType: 'road',
+              elementType: 'geometry',
+              stylers: [{color: '#38414e'}]
+            },
+            {
+              featureType: 'road',
+              elementType: 'geometry.stroke',
+              stylers: [{color: '#212a37'}]
+            },
+            {
+              featureType: 'road',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#9ca5b3'}]
+            },
+            {
+              featureType: 'road.highway',
+              elementType: 'geometry',
+              stylers: [{color: '#746855'}]
+            },
+            {
+              featureType: 'road.highway',
+              elementType: 'geometry.stroke',
+              stylers: [{color: '#1f2835'}]
+            },
+            {
+              featureType: 'road.highway',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#f3d19c'}]
+            },
+            {
+              featureType: 'transit',
+              elementType: 'geometry',
+              stylers: [{color: '#2f3948'}]
+            },
+            {
+              featureType: 'transit.station',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#d59563'}]
+            },
+            {
+              featureType: 'water',
+              elementType: 'geometry',
+              stylers: [{color: '#17263c'}]
+            },
+            {
+              featureType: 'water',
+              elementType: 'labels.text.fill',
+              stylers: [{color: '#515c6d'}]
+            },
+            {
+              featureType: 'water',
+              elementType: 'labels.text.stroke',
+              stylers: [{color: '#17263c'}]
+            }
+          ]
+                });
+                userPosition = getUserPosition();
+                initTrucks();
+                //testingArray();
+				updateListView();
+                for (var i = 0; i < trucks.length; i++) {
+                    trucks[i].marker = createMarker(trucks[i]);
+                }
+                updateTrucks();
+            }
+
+            function updateListView() {
+                document.getElementById("truckList").innerHTML = "";
+                for (var i = 0; i < trucks.length; i++) {
+                    document.getElementById("truckList").innerHTML += "<li id='trucks[" + i + "]' onclick='populateTruckInfo(trucks[" + i + "])'><h3>" + trucks[i].name + "</h3></li>";
+                }
+            }
+
+			function populateTruckInfo(selectedTruck) {
+				if (startDisplay) {
+					document.getElementById("displayWindow").style.backgroundImage = "none";
+					document.getElementById("welcomeScreen").style.display = "none";
+					document.getElementById("truckInfo").style.display = "block";
+					startDisplay = false;
+				}
+				var currentTime = new Date();
+				var meridian = ((currentTime.getHours() < 12) ? "a.m." : "p.m.");
+				var hour = currentTime.getHours()%12;
+				var minutes = "0"+currentTime.getMinutes();
+				minutes = minutes.substr(minutes.length-2);
+				var displayTime = hour+":"+minutes+meridian;
+
+				//smoothZoom(map, 18, map.zoom);
+				map.setZoom(18);
+				map.panTo(selectedTruck.position);
+				document.getElementById("currentTime").innerHTML = displayTime;
+				document.getElementById("truckName").innerHTML = selectedTruck.name;
+				document.getElementById("truckTime").innerHTML = selectedTruck.time;
+				document.getElementById("truckDay").innerHTML = selectedTruck.day;
+				document.getElementById("truckTimeEnd").innerHTML = getEndTime(selectedTruck);
+
+				currentTruck = selectedTruck;
+			}
+
+		function getEndTime(selectedTruck) {
+			var periods = ["breakfast", "lunch", "dinner"];
+			var periodEndTimes = ["10a.m.", "3p.m.", "7p.m."];
+			for (var i = 0; i < periods.length; i++) {
+				if (selectedTruck.time.toLowerCase() == periods[i]) {
+					return periodEndTimes[i];
+				}
+			}
+			return "11p.m."
+		}
+
+		function openMenuPages() {
+			var linkName = "";
+			var currentName = currentTruck.name.toLowerCase();
+			var lastWasHyphen = false;
+			var startAt = 0;
+			for (var i = 0; i < currentName.length; i++) {
+				var currentChar = currentName.charCodeAt(i);
+				if (currentChar >= 97 && currentChar <= 122) {
+					lastWasHyphen = false;
+					linkName += currentName.charAt(i);
+				} else if (currentChar == 32 && lastWasHyphen == false) {
+					linkName += '-';
+					lastWasHyphen = true;
+				} else {
+				}
+			}
+			window.open("http://boston.menupages.com/restaurants/"+linkName+"/");
+		}
+
+		function displayDirections(start, end) {
+			  var directionsService = new google.maps.DirectionsService;
+			  var directionsDisplay = new google.maps.DirectionsRenderer;
+			  directionsDisplay.setMap(map);
+			  directionsService.route({
+				origin: start,
+				destination: end,
+				travelMode: 'DRIVING'
+			  }, function(response, status) {
+				if (status === 'OK') {
+				  directionsDisplay.setDirections(response);
+				} else {
+				  window.alert('Directions request failed due to ' + status);
+				}
+			  });
+			}
+        </script>
+
+        <script async defer src="YourGoogleMapApiKey"></script>
+
+        <title>Food Truck Finder</title>
+        <style>
+            body {
+                color: #000000;
+                font-family: Roboto;
+            }
+
+			::-webkit-scrollbar {
+				width: 12px;
+			}
+
+			::-webkit-scrollbar-track {
+				-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+				border-radius: 10px;
+			}
+
+			::-webkit-scrollbar-thumb {
+				border-radius: 10px;
+				-webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+			}
+
+            @media all and (max-height: 690px), (max-aspect-ratio: 4/3) {
+                #listTitle { display: none; }
+				.textColumn h1 {font-size: 9vh;}
+            }
+
+            .textColumn {
+                color: white;
+                position: fixed;
+                top: 0;
+                right: 75%;
+                left: 0;
+                bottom: 60%;
+                padding: 1em 2em 2em 2em;
+                background-color: #F63440;
+            }
+
+            .textColumn h1 {
+                font-weight: bold;
+				font-size: 2.75em;
+            }
+
+            .textColumn h2 {
+                font-weight: normal;
+                font-size: 2.25vw;
+            }
+
+            #inputField {
+                padding-left: 5%;
+                width: 80%;
+                height: 2.75em;
+                border-style: none;
+                font-family: Roboto;
+                font-weight: bold;
+            }
+
+            #searchBarImg {
+                position: absolute;
+                margin-left: 2.5%;
+                color: black;
+                float: left;
+                font-size: 250%;
+            }
+
+            #searchBarImg:hover {
+                font-size: 225%;
+            }
+
+            #actualList {
+                color: white;
+                position: fixed;
+                top: 40%;
+                left: 0;
+                right: 75%;
+                bottom: 0;
+                background-color: #F63440;
+				padding:0em 2em;
+				overflow-y: auto;
+            }
+
+            #truckList {
+                top: 0;
+                bottom: 0;
+                list-style-type: none;
+                padding: 0;
+                border: 0 solid #ddd;
+                border-width: 2px 0 0 0;
+            }
+
+            #truckList li {
+                padding: 0.5em 0;
+                border: 0 solid #ddd;
+                border-width: 0 0 2px 0;
+                text-align: left;
+				text-overflow: ellipsis;
+				cursor: pointer;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.4s;
+            }
+
+            #truckList li:hover {
+                background-color: #E83440;
+				box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0px 6px 20px 0px rgba(0, 0, 0, 0.12);
+            }
+
+			#mapWrapper {
+				position: fixed;
+                top: 0;
+                left: 25%;
+                right: 0;
+				bottom:48%;
+
+                /*bottom: 48%;
+                width: 75%;*/
+			}
+
+            #map {
+				height:100%;
+				width:100%;
+            }
+
+            #displayWindow {
+                background-image: url(http://i.imgur.com/nmm0Fbj.jpg);
+                background-size: 100%;
+                position: fixed;
+                left: 25%;
+				top:52%;
+				bottom:0;
+				right:0;
+				color:white;
+					/*height: 52%;
+					top: 48%;
+					width: 75%;*/
+            }
+
+            #truckInfo {
+				position:absolute;
+				display: none;
+				height:100%;
+                color: black;
+				padding-left: 2em;
+				padding-right: 2em;
+            }
+
+			iframe {
+				position: absolute;
+				height: 100%;
+				width: 100%;
+				right: 0%;
+				bottom: 0%;
+				border-style: none;
+			}
+
+			.button {
+				background-color: #F63440;
+				border: none;
+				color: white;
+				padding: 15px 32px;
+				text-align: center;
+				text-decoration: none;
+				display: inline-block;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+				-webkit-transition-duration: 0.4s; /* Safari */
+				transition-duration: 0.4s;
+				border-radius: 8px;
+			}
+
+			.button:hover {
+			    background-color: #E83440;
+				box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0px 6px 20px 0px rgba(0, 0, 0, 0.12);
+			}
+
+        </style>
+    </head>
+
+    <body>
+        <div class="textColumn">
+            <h1>Food Truck App</h1>
+			<hr style="color:white; margin-bottom:2.0vw;">
+			<div id="listTitle">
+                <h2>Search for a Truck!</h2>
+            </div>
+            <form id="formSubmission" action="/tdata" method="POST">
+				<input type="text" id="inputField" placeholder="Search for a truck!" name="name">
+				<i type="submit" id="searchBarImg" class="fa fa-search" onclick="document.getElementById('formSubmission').submit()"></i>
+            <!--<input id="inputField" type="text" placeholder="Search for a truck!"></input>
+            <i class="fa fa-search" id="searchBarImg" onclick="searchFor()"></i>-->
+            </form>
+        </div>
+
+        <div id="actualList">
+            <ul id="truckList"></ul>
+        </div>
+
+		<div id="mapWrapper">
+			<div id="map"></div>
+		</div>
+
+        <div id="displayWindow">
+			<div id="welcomeScreen">
+				<h1 align="center">Hungry? Look above to see what's nearby!</h1>
+				<h2 align="center">Or, if you know what you're in the mood for, use the search bar to find what hits the spot.</h2>
+			</div>
+            <div id="truckInfo">
+				<h1>Hungry? <span id="truckName"></span> is on its <span id="truckTime"></span> schedule for <span id="truckDay"></span> until <span id="truckTimeEnd"></span></h1>
+				<hr style="color:black;">
+				<h2>It's <span id="currentTime"></span> Want more options? Click below!</h2>
+				<button class="button" onclick="displayDirections({lat:42.349869, lng:-71.108476}, currentTruck.position)">Get Directions</button>
+				<button class="button" onclick="openMenuPages()">Menu Pages</button>
+				<button class="button">Display Full Schedule</button>
+			</div>
+        </div>
+
+    </body>
+
+</html>
